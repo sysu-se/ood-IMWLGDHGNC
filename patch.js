@@ -1,4 +1,7 @@
-<script>
+const fs = require('fs');
+let code = fs.readFileSync('src/components/Controls/ActionBar/Actions.svelte', 'utf8');
+
+const svelteScript = `<script>
         import { candidates } from '@sudoku/stores/candidates';
         import { grid, userGrid, canUndo, canRedo, isExploring } from '@sudoku/stores/grid';
         import { undoMove, redoMove } from '@sudoku/game';
@@ -91,22 +94,8 @@
         {/if}
 </div>
 
-<style>
-	.action-buttons {
-		@apply flex flex-wrap justify-evenly self-end;
-	}
+<style>`;
 
-	.btn-badge {
-		@apply relative;
-	}
-
-	.badge {
-		min-height: 20px;
-		min-width:  20px;
-		@apply p-1 rounded-full leading-none text-center text-xs text-white bg-gray-600 inline-block absolute top-0 left-0;
-	}
-
-	.badge-primary {
-		@apply bg-primary;
-	}
-</style>
+code = code.replace(/<script>[\s\S]*?<style>/, svelteScript);
+fs.writeFileSync('src/components/Controls/ActionBar/Actions.svelte', code);
+console.log('patched');
