@@ -22,6 +22,18 @@ export class Sudoku {
 
         this.grid = deepCopyGrid(grid);
         this.fixed = fixedMask.map((row) => [...row]);
+
+        for (let row = 0; row < BOARD_SIZE; row += 1) {
+            for (let col = 0; col < BOARD_SIZE; col += 1) {
+                if (this.grid[row][col] !== EMPTY) {
+                    const val = this.grid[row][col];
+                    this.grid[row][col] = EMPTY;
+                    const isValid = this.isValueAllowed(row, col, val);
+                    this.grid[row][col] = val;
+                    assert(isValid, `initial grid contains conflicts at (${row}, ${col})`);
+                }
+            }
+        }
     }
 
     /** @returns {number[][]} deep-copied 9x9 board snapshot. */
@@ -36,10 +48,10 @@ export class Sudoku {
      * @returns {number}
      */
     getCell(row, col) {
-        // assert(Number.isInteger(row), 'row must be an integer');
-        // assert(row >= 0 && row < BOARD_SIZE, 'row must be in [0, 8]');
-        // assert(Number.isInteger(col), 'col must be an integer');
-        // assert(col >= 0 && col < BOARD_SIZE, 'col must be in [0, 8]');
+        assert(Number.isInteger(row), 'row must be an integer');
+        assert(row >= 0 && row < BOARD_SIZE, 'row must be in [0, 8]');
+        assert(Number.isInteger(col), 'col must be an integer');
+        assert(col >= 0 && col < BOARD_SIZE, 'col must be in [0, 8]');
         return this.grid[row][col];
     }
 
@@ -56,10 +68,12 @@ export class Sudoku {
         assert(!this.fixed[row][col], `cell (${row}, ${col}) is fixed and cannot be modified`);
 
         const previousValue = this.grid[row][col];
-        this.grid[row][col] = EMPTY;
-
+        
         if (value !== EMPTY) {
-            assert(this.isValueAllowed(row, col, value), `move violates Sudoku rule at (${row}, ${col})`);
+            this.grid[row][col] = EMPTY;
+            const isValid = this.isValueAllowed(row, col, value);
+            this.grid[row][col] = previousValue;
+            assert(isValid, `move violates Sudoku rule at (${row}, ${col})`);
         }
 
         this.grid[row][col] = value;
@@ -83,6 +97,34 @@ export class Sudoku {
 
     toString() {
         return this.grid.map((row) => row.join(' ')).join('\n');
+    }
+
+    isWon() {
+        for (let row = 0; row < BOARD_SIZE; row += 1) {
+            for (let col = 0; col < BOARD_SIZE; col += 1) {
+                if (this.grid[row][col] === EMPTY) {
+                    return false;
+                }
+            }
+        }
+        return this.getInvalidCells().length === 0;
+    }
+
+    getInvalidCells() {
+        const invalid = [];
+        for (let row = 0; row < BOARD_SIZE; row += 1) {
+            for (let col = 0; col < BOARD_SIZE; col += 1) {
+                const value = this.grid[row][col];
+                if (value !== EMPTY) {
+                    this.grid[row][col] = EMPTY;
+                    if (!this.isValueAllowed(row, col, value)) {
+                        invalid.push({ row, col });
+                    }
+                    this.grid[row][col] = value;
+                }
+            }
+        }
+        return invalid;
     }
 
     /**

@@ -26,6 +26,10 @@ export class Game {
         validateMove(move);
 
         const previousValue = this.sudoku.getCell(move.row, move.col);
+        if (move.value === previousValue) {
+            return;
+        }
+
         this.sudoku.guess(move);
 
         this.history.push({
@@ -68,6 +72,14 @@ export class Game {
 
     canRedo() {
         return this.redoList.length > 0;
+    }
+
+    isWon() {
+        return this.sudoku.isWon();
+    }
+
+    getInvalidCells() {
+        return this.sudoku.getInvalidCells();
     }
 
     /**
