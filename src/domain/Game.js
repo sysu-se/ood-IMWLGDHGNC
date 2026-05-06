@@ -62,7 +62,8 @@ export class Game {
     }
 
     canUndo() {
-        return this.history.length > 0;
+        const limit = this.isExploring() ? this.exploreSnapshots[this.exploreSnapshots.length - 1].historyLength : 0;
+        return this.history.length > limit;
     }
 
     canRedo() {
@@ -95,8 +96,11 @@ export class Game {
         this.exploreSnapshots.push({
             sudoku: this.sudoku.clone(),
             historyLength: this.history.length,
-            redoLength: this.redoList.length,
+            redoList: this.redoList.map(item => ({ ...item })),
         });
+        
+        // 独立 Undo/Redo 隔离：开启探索时，清空当前重做栈，使得探索分支的 Redo 不受主分支干扰
+        this.redoList = [];
     }
 
     /**
@@ -120,10 +124,10 @@ export class Game {
 
         const snapshot = this.exploreSnapshots.pop();
         
-        // 恢复对象快照和局部历史栈
+        // 恢复对象快照和局部历史栈，并还原原本深拷贝保存的 redoList
         this.sudoku = snapshot.sudoku;
         this.history = this.history.slice(0, snapshot.historyLength);
-        this.redoList = this.redoList.slice(0, snapshot.redoLength);
+        this.redoList = snapshot.redoList;
     }
 
     /**
@@ -148,7 +152,7 @@ export class Game {
             exploreSnapshots: this.exploreSnapshots.map((item) => ({
                 sudoku: item.sudoku.toJSON(),
                 historyLength: item.historyLength,
-                redoLength: item.redoLength,
+                redoList: item.redoList.map((m) => ({ ...m })),
             })),
             failedExplorePaths: Array.from(this.failedExplorePaths),
         };
@@ -170,11 +174,16 @@ export function createGameFromJSON(json) {
     game.redoList = json.redoList.map((item) => ({ ...item }));
     
     if (json.exploreSnapshots) {
-        game.exploreSnapshots = json.exploreSnapshots.map((item) => ({
-            sudoku: createSudokuFromJSON(item.sudoku),
-            historyLength: item.historyLength,
-            redoLength: item.redoLength,
-        }));
+        game.exploreSnapshots = json.exploreSnapshots.map((item) => {
+            if (item.redoList) {
+                validateMoveList(item.redoList, 'exploreSnapshots.redoList');
+            }
+            return {
+                sudoku: createSudokuFromJSON(item.sudoku),
+                historyLength: item.historyLength,
+                redoList: (item.redoList || []).map((m) => ({ ...m })),
+            };
+        });
     }
     if (json.failedExplorePaths) {
         game.failedExplorePaths = new Set(json.failedExplorePaths);

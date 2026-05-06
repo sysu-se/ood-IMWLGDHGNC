@@ -109,6 +109,8 @@ export class Sudoku {
      * 寻找能进行“下一步提示”的格子（即只有唯一候选数的空白格）
      * @returns {{row: number, col: number, value: number} | null} 返回可以确定的格子及其值，如果没有则返回 null
      */
+
+
     getHint() {
         for (let row = 0; row < BOARD_SIZE; row += 1) {
             for (let col = 0; col < BOARD_SIZE; col += 1) {
